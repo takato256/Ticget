@@ -4,9 +4,12 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.AdapterView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -18,16 +21,20 @@ import org.jsoup.nodes.Element;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashMap;
 
 public class MainActivity extends AppCompatActivity {
 
     private Button fetchButton;
     private EditText inputEditText;
     private TextView resultTextView;
+    private Spinner spinner;
 
     private List<String> keywords;
     private Handler handler;
     private Runnable runnable;
+    private ArrayAdapter<String> adapter;
+    private HashMap<String, List<String>> keywordResults;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,9 +44,37 @@ public class MainActivity extends AppCompatActivity {
         fetchButton = findViewById(R.id.fetchButton);
         inputEditText = findViewById(R.id.inputEditText);
         resultTextView = findViewById(R.id.resultTextView);
+        spinner = findViewById(R.id.spinner);
 
         keywords = new ArrayList<>();
+        keywordResults = new HashMap<>();
         handler = new Handler();
+
+        adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, keywords);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinner.setAdapter(adapter);
+
+        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                String keyword = parent.getItemAtPosition(position).toString();
+                List<String> results = keywordResults.get(keyword);
+                StringBuilder sb = new StringBuilder();
+                if (results != null && !results.isEmpty()) {
+                    for (String result : results) {
+                        sb.append(result).append("\n");
+                    }
+                } else {
+                    sb.append("No matching paragraphs found");
+                }
+                resultTextView.setText(sb.toString());
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+                resultTextView.setText("");
+            }
+        });
 
         fetchButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -48,12 +83,12 @@ public class MainActivity extends AppCompatActivity {
                 if (!keyword.isEmpty()) {
                     keywords.add(keyword);
                     inputEditText.setText("");
+                    adapter.notifyDataSetChanged();
                     updateResult();
                 }
             }
         });
 
-        // 定期的に結果を更新する
         runnable = new Runnable() {
             @Override
             public void run() {
@@ -79,44 +114,37 @@ public class MainActivity extends AppCompatActivity {
         new WebScraperTask().execute();
     }
 
-    private class WebScraperTask extends AsyncTask<Void, Void, List<String>> {
+    private class WebScraperTask extends AsyncTask<Void, Void, Void> {
 
         @Override
-        protected List<String> doInBackground(Void... voids) {
-            List<String> results = new ArrayList<>();
+        protected Void doInBackground(Void... voids) {
             try {
                 // WebページのURLを指定してHTMLを取得
-                Document doc = Jsoup.connect("https://twitter.com/home").get();
+                Document doc = Jsoup.connect("https://takato256.github.io/PacketStreet/").get();
 
                 // pタグを取得
                 Elements paragraphs = doc.select("p");
 
                 // キーワードを含むpタグを検索
                 for (String keyword : keywords) {
+                    List<String> results = new ArrayList<>();
                     for (Element paragraph : paragraphs) {
                         String paragraphText = paragraph.text();
                         if (paragraphText.contains(keyword)) {
                             results.add(paragraphText);
                         }
                     }
+                    keywordResults.put(keyword, results);
                 }
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            return results;
+            return null;
         }
 
         @Override
-        protected void onPostExecute(List<String> results) {
-            StringBuilder sb = new StringBuilder();
-            if (!results.isEmpty()) {
-                for (String result : results) {
-                    sb.append(result).append("\n");
-                }
-            } else {
-                sb.append("No matching paragraphs found");
-            }
-            resultTextView.setText(sb.toString());
+        protected void onPostExecute(Void aVoid) {
+            adapter.notifyDataSetChanged();
         }
     }
 }

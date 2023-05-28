@@ -19,6 +19,12 @@
         android:layout_height="wrap_content"
         android:text="Add Keyword" />
 
+    <Spinner
+        android:id="@+id/spinner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp" />
+
     <TextView
         android:id="@+id/resultTextView"
         android:layout_width="match_parent"

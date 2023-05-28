@@ -11,13 +11,13 @@
         android:id="@+id/inputEditText"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Enter a text" />
+        android:hint="Enter a keyword" />
 
     <Button
         android:id="@+id/fetchButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Fetch Matching Paragraphs" />
+        android:text="Add Keyword" />
 
     <TextView
         android:id="@+id/resultTextView"

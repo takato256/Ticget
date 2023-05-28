@@ -13,11 +13,27 @@
         android:layout_height="wrap_content"
         android:hint="Enter a keyword" />
 
-    <Button
-        android:id="@+id/fetchButton"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Add Keyword" />
+        android:orientation="horizontal"
+        android:layout_marginTop="16dp">
+
+        <Button
+            android:id="@+id/fetchButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Add Keyword" />
+
+        <Button
+            android:id="@+id/deleteButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Delete Keyword" />
+
+    </LinearLayout>
 
     <Spinner
         android:id="@+id/spinner"

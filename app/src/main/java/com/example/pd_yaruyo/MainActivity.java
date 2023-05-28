@@ -26,6 +26,7 @@ import java.util.HashMap;
 public class MainActivity extends AppCompatActivity {
 
     private Button fetchButton;
+    private Button deleteButton;
     private EditText inputEditText;
     private TextView resultTextView;
     private Spinner spinner;
@@ -42,6 +43,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         fetchButton = findViewById(R.id.fetchButton);
+        deleteButton = findViewById(R.id.deleteButton);
         inputEditText = findViewById(R.id.inputEditText);
         resultTextView = findViewById(R.id.resultTextView);
         spinner = findViewById(R.id.spinner);
@@ -85,6 +87,19 @@ public class MainActivity extends AppCompatActivity {
                     inputEditText.setText("");
                     adapter.notifyDataSetChanged();
                     updateResult();
+                }
+            }
+        });
+
+        deleteButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                int position = spinner.getSelectedItemPosition();
+                if (!keywords.isEmpty()) {
+                    String keyword = keywords.remove(position);
+                    keywordResults.remove(keyword);
+                    adapter.notifyDataSetChanged();
+                    resultTextView.setText("");
                 }
             }
         });

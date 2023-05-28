@@ -7,11 +7,17 @@
     android:padding="16dp"
     tools:context=".MainActivity">
 
+    <EditText
+        android:id="@+id/inputEditText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Enter a text" />
+
     <Button
         android:id="@+id/fetchButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Fetch Page Title" />
+        android:text="Fetch Matching Paragraphs" />
 
     <TextView
         android:id="@+id/resultTextView"

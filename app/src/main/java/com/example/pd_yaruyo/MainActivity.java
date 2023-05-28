@@ -3,6 +3,7 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -12,12 +13,12 @@ import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 import org.jsoup.nodes.Element;
 
-
 import java.io.IOException;
 
 public class MainActivity extends AppCompatActivity {
 
     private Button fetchButton;
+    private EditText inputEditText;
     private TextView resultTextView;
 
     @Override
@@ -26,17 +27,25 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         fetchButton = findViewById(R.id.fetchButton);
+        inputEditText = findViewById(R.id.inputEditText);
         resultTextView = findViewById(R.id.resultTextView);
 
         fetchButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                new WebScraperTask().execute();
+                String inputText = inputEditText.getText().toString();
+                new WebScraperTask(inputText).execute();
             }
         });
     }
 
     private class WebScraperTask extends AsyncTask<Void, Void, String> {
+
+        private String inputText;
+
+        public WebScraperTask(String inputText) {
+            this.inputText = inputText;
+        }
 
         @Override
         protected String doInBackground(Void... voids) {
@@ -47,11 +56,15 @@ public class MainActivity extends AppCompatActivity {
                 // pタグを取得
                 Elements paragraphs = doc.select("p");
 
-                // pタグのテキストを連結して返す
+                // 入力された文字列を含むpタグを検索
                 StringBuilder sb = new StringBuilder();
                 for (Element paragraph : paragraphs) {
-                    sb.append(paragraph.text()).append("\n");
+                    String paragraphText = paragraph.text();
+                    if (paragraphText.contains(inputText)) {
+                        sb.append(paragraphText).append("\n");
+                    }
                 }
+
                 return sb.toString();
             } catch (IOException e) {
                 e.printStackTrace();
@@ -61,12 +74,11 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         protected void onPostExecute(String result) {
-            if (result != null) {
+            if (result != null && !result.isEmpty()) {
                 resultTextView.setText(result);
             } else {
-                resultTextView.setText("Failed to fetch paragraph text");
+                resultTextView.setText("No matching paragraphs found");
             }
         }
     }
-
 }

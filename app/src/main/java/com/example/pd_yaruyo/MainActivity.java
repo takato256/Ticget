@@ -9,19 +9,17 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
-import android.widget.AdapterView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.jsoup.select.Elements;
 import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.HashMap;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -34,8 +32,7 @@ public class MainActivity extends AppCompatActivity {
     private List<String> keywords;
     private Handler handler;
     private Runnable runnable;
-    private ArrayAdapter<String> adapter;
-    private HashMap<String, List<String>> keywordResults;
+    private String scrapingKeyword = "受付期間";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,34 +46,7 @@ public class MainActivity extends AppCompatActivity {
         spinner = findViewById(R.id.spinner);
 
         keywords = new ArrayList<>();
-        keywordResults = new HashMap<>();
         handler = new Handler();
-
-        adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, keywords);
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinner.setAdapter(adapter);
-
-        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                String keyword = parent.getItemAtPosition(position).toString();
-                List<String> results = keywordResults.get(keyword);
-                StringBuilder sb = new StringBuilder();
-                if (results != null && !results.isEmpty()) {
-                    for (String result : results) {
-                        sb.append(result).append("\n");
-                    }
-                } else {
-                    sb.append("No matching paragraphs found");
-                }
-                resultTextView.setText(sb.toString());
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-                resultTextView.setText("");
-            }
-        });
 
         fetchButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -85,7 +55,7 @@ public class MainActivity extends AppCompatActivity {
                 if (!keyword.isEmpty()) {
                     keywords.add(keyword);
                     inputEditText.setText("");
-                    adapter.notifyDataSetChanged();
+                    updateSpinner();
                     updateResult();
                 }
             }
@@ -94,12 +64,11 @@ public class MainActivity extends AppCompatActivity {
         deleteButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                int position = spinner.getSelectedItemPosition();
-                if (!keywords.isEmpty()) {
-                    String keyword = keywords.remove(position);
-                    keywordResults.remove(keyword);
-                    adapter.notifyDataSetChanged();
-                    resultTextView.setText("");
+                String selectedKeyword = (String) spinner.getSelectedItem();
+                if (selectedKeyword != null) {
+                    keywords.remove(selectedKeyword);
+                    updateSpinner();
+                    updateResult();
                 }
             }
         });
@@ -108,7 +77,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void run() {
                 updateResult();
-                handler.postDelayed(this, 3600000); // 1時間ごとに更新
+                handler.postDelayed(this, 3600000); // 1時間ごとに情報を更新
             }
         };
     }
@@ -116,50 +85,69 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        handler.postDelayed(runnable, 5000); // 5秒後から定期実行を開始
+        handler.postDelayed(runnable, 5000); // 5秒後に情報を取得
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        handler.removeCallbacks(runnable); // 定期実行を停止
+        handler.removeCallbacks(runnable); // 実行停止
     }
 
     private void updateResult() {
-        new WebScraperTask().execute();
+        for (String keyword : keywords) {
+            new WebScraperTask(keyword).execute();
+        }
     }
 
-    private class WebScraperTask extends AsyncTask<Void, Void, Void> {
+    private void updateSpinner() {
+        ArrayAdapter<String> spinnerArrayAdapter = new ArrayAdapter<>(
+                this, android.R.layout.simple_spinner_item, keywords);
+        spinnerArrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinner.setAdapter(spinnerArrayAdapter);
+    }
+
+    private class WebScraperTask extends AsyncTask<Void, Void, List<String>> {
+
+        private String keyword; // ユーザーが入力するクエリ部分
+
+        public WebScraperTask(String keyword) {
+            this.keyword = keyword;
+        }
 
         @Override
-        protected Void doInBackground(Void... voids) {
+        protected List<String> doInBackground(Void... voids) {
+            List<String> results = new ArrayList<>();
             try {
-                // WebページのURLを指定してHTMLを取得
-                Document doc = Jsoup.connect("https://takato256.github.io/PacketStreet/").get();
+                Document doc = Jsoup.connect("https://eplus.jp/sf/detail/0231370001").get();
+                Elements statusElements = doc.select("p");
 
-                // pタグを取得
-                Elements paragraphs = doc.select("p");
-
-                // キーワードを含むpタグを検索
-                for (String keyword : keywords) {
-                    List<String> results = new ArrayList<>();
-                    for (Element paragraph : paragraphs) {
-                        String paragraphText = paragraph.text();
-                        if (paragraphText.contains(keyword)) {
-                            results.add(paragraphText);
+                for (Element statusElement : statusElements) {
+                    String statusText = statusElement.text();
+                    if (statusText.contains(scrapingKeyword)) {
+                        if (statusText.length() > 5) {
+                            statusText = statusText.substring(5);  // 最初の5文字をスキップ
                         }
+                        results.add(statusText);
                     }
-                    keywordResults.put(keyword, results);
                 }
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            return null;
+            return results;
         }
 
         @Override
-        protected void onPostExecute(Void aVoid) {
-            adapter.notifyDataSetChanged();
+        protected void onPostExecute(List<String> results) {
+            StringBuilder sb = new StringBuilder();
+            if (!results.isEmpty()) {
+                for (String result : results) {
+                    sb.append("- ").append(result).append("\n");
+                }
+            } else {
+                sb.append("No matching status found");
+            }
+            resultTextView.setText(sb.toString());
         }
     }
 }

@@ -68,7 +68,7 @@ public class MainActivity extends AppCompatActivity {
                 if (selectedKeyword != null) {
                     keywords.remove(selectedKeyword);
                     updateSpinner();
-                    updateResult();
+                    resetResult(); // Reset the results
                 }
             }
         });
@@ -77,7 +77,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void run() {
                 updateResult();
-                handler.postDelayed(this, 3600000); // 1時間ごとに情報を更新
+                handler.postDelayed(this, 3600000); // Update the information every hour
             }
         };
     }
@@ -85,13 +85,17 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        handler.postDelayed(runnable, 5000); // 5秒後に情報を取得
+        handler.postDelayed(runnable, 5000); // Retrieve information after 5 seconds
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        handler.removeCallbacks(runnable); // 実行停止
+        handler.removeCallbacks(runnable); // Stop execution
+    }
+
+    private void resetResult() {
+        resultTextView.setText(""); // Clears the TextView
     }
 
     private void updateResult() {
@@ -109,7 +113,7 @@ public class MainActivity extends AppCompatActivity {
 
     private class WebScraperTask extends AsyncTask<Void, Void, List<String>> {
 
-        private String keyword; // ユーザーが入力するクエリ部分
+        private String keyword; // The query part the user inputs
 
         public WebScraperTask(String keyword) {
             this.keyword = keyword;
@@ -126,7 +130,7 @@ public class MainActivity extends AppCompatActivity {
                     String statusText = statusElement.text();
                     if (statusText.contains(scrapingKeyword)) {
                         if (statusText.length() > 5) {
-                            statusText = statusText.substring(5);  // 最初の5文字をスキップ
+                            statusText = statusText.substring(5);  // Skip the first 5 characters
                         }
                         results.add(statusText);
                     }
